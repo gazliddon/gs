@@ -39,7 +39,7 @@ impl std::fmt::Display for Status {
 
 use regex::Regex;
 
-fn get_it(r: &str, text: &str) -> bool {
+fn check_for_string(r: &str, text: &str) -> bool {
     let regex_text = format!("({r})");
     let re = Regex::new(&regex_text).unwrap();
     re.is_match(text)
@@ -62,15 +62,15 @@ fn get_status<P: AsRef<Path>>(p: P) -> Vec<Status> {
         match out {
             Ok(a) => {
                 let text = std::str::from_utf8(&a.stdout).unwrap();
-                if get_it("Untracked files:", text) {
+                if check_for_string("Untracked files:", text) {
                     ret.push(Status::UntrackedFiles)
                 };
 
-                if get_it("modified:", text) {
+                if check_for_string("modified:", text) {
                     ret.push(Status::ModifiedFiles)
                 };
 
-                if get_it("Your branch is ahead", text) {
+                if check_for_string("Your branch is ahead", text) {
                     ret.push(Status::BranchIsAhead)
                 };
                 if ret.is_empty() {
@@ -97,14 +97,12 @@ fn main() {
         let mut txt: Vec<_> = x
             .iter()
             .map(|d| {
-                let dir = d.to_str().unwrap();
-                let status = get_status(d);
-                (dir, status)
+                (d.to_str().unwrap(), get_status(d))
             })
             .map(|(dir, status)| {
                 status
                     .into_iter()
-                    .filter(|s| *s != Status::Clean)
+                    // .filter(|s| *s != Status::Clean)
                     .map(|s| format!("{:18} : {}", s.to_string(), dir))
                     .collect::<Vec<_>>()
             })
