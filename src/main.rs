@@ -1,6 +1,9 @@
 #![allow(dead_code)]
 #![allow(unused_imports)]
+mod config;
 mod dirs;
+mod expand;
+
 use std::path::{Path, PathBuf};
 use structopt::StructOpt;
 #[derive(StructOpt, Debug)]
@@ -19,20 +22,40 @@ struct Opt {
 }
 
 #[derive(Debug, PartialEq, Copy, Clone)]
-enum Status {
+enum StatusKind {
     ModifiedFiles,
     UntrackedFiles,
     BranchIsAhead,
     Clean,
 }
 
+struct Status {
+    file: PathBuf,
+    status: StatusKind,
+}
+
+impl Status {
+    pub fn new<P: AsRef<Path>>(p: P, status: StatusKind) -> Self {
+        Self {
+            file: p.as_ref().into(),
+            status,
+        }
+    }
+}
 impl std::fmt::Display for Status {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let file = self.file.file_stem().unwrap().to_string_lossy();
+        write!(f, "{:20} {}", self.status.to_string(), file)
+    }
+}
+
+impl std::fmt::Display for StatusKind {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Status::ModifiedFiles => write!(f, "❌ Modified files"),
-            Status::UntrackedFiles => write!(f, "❌ Untracked files"),
-            Status::BranchIsAhead => write!(f, "❌ Branch is ahead"),
-            Status::Clean => write!(f, "✅ Clean"),
+            StatusKind::ModifiedFiles => write!(f, "❌ Modified files"),
+            StatusKind::UntrackedFiles => write!(f, "❌ Untracked files"),
+            StatusKind::BranchIsAhead => write!(f, "❌ Branch is ahead"),
+            StatusKind::Clean => write!(f, "✅ Clean"),
         }
     }
 }
@@ -45,13 +68,16 @@ fn check_for_string(r: &str, text: &str) -> bool {
     re.is_match(text)
 }
 
-fn get_status<P: AsRef<Path>>(p: P) -> Vec<Status> {
+fn get_all_status<P: AsRef<Path>>(p: P) -> Vec<Status> {
+
     use std::env::{current_dir, set_current_dir};
     let p = p.as_ref();
 
     let mut ret = vec![];
 
     if dirs::is_git_dir(p) {
+        use StatusKind::*;
+
         use std::process::Command;
 
         let dc = current_dir().expect("Can't get current_dir");
@@ -63,18 +89,18 @@ fn get_status<P: AsRef<Path>>(p: P) -> Vec<Status> {
             Ok(a) => {
                 let text = std::str::from_utf8(&a.stdout).unwrap();
                 if check_for_string("Untracked files:", text) {
-                    ret.push(Status::UntrackedFiles)
+                    ret.push(Status::new(p, UntrackedFiles))
                 };
 
                 if check_for_string("modified:", text) {
-                    ret.push(Status::ModifiedFiles)
+                    ret.push(Status::new(p, ModifiedFiles))
                 };
 
                 if check_for_string("Your branch is ahead", text) {
-                    ret.push(Status::BranchIsAhead)
+                    ret.push(Status::new(p, BranchIsAhead))
                 };
                 if ret.is_empty() {
-                    ret.push(Status::Clean)
+                    ret.push(Status::new(&p, Clean))
                 }
             }
             Err(_) => {
@@ -90,25 +116,18 @@ fn get_status<P: AsRef<Path>>(p: P) -> Vec<Status> {
 
 fn main() {
     let opt = Opt::from_args();
-    // Test
+    let config = config::Config::new();
 
-    for p in opt.files {
+    let mut files = opt.files;
+    files.extend_from_slice(&config.repositries);
+
+    println!("Files {:?}", files );
+
+    for p in files {
         let x = dirs::get_dirs(p);
 
-        let mut txt: Vec<_> = x
-            .iter()
-            .map(|d| {
-                (d.to_str().unwrap(), get_status(d))
-            })
-            .map(|(dir, status)| {
-                status
-                    .into_iter()
-                    // .filter(|s| *s != Status::Clean)
-                    .map(|s| format!("{:18} : {}", s.to_string(), dir))
-                    .collect::<Vec<_>>()
-            })
-            .flatten()
-            .collect();
+        let statues: Vec<_> = x.iter().map(get_all_status).flatten().collect();
+        let mut txt: Vec<_> = statues.into_iter().map(|s| s.to_string()).collect();
 
         txt.sort();
 

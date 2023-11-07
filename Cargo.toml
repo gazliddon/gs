@@ -1,10 +1,12 @@
 [package]
 name = "gs"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
 structopt = "0.3"
-regex="*"
+regex=  "1.10.2"
+shellexpand = "3.0"
+toml =  "0.8.8"
+serde = { version="1.0.188", features=[ "derive" ]}
