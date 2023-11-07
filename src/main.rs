@@ -90,6 +90,7 @@ fn get_status<P: AsRef<Path>>(p: P) -> Vec<Status> {
 
 fn main() {
     let opt = Opt::from_args();
+    // Test
 
     for p in opt.files {
         let x = dirs::get_dirs(p);
