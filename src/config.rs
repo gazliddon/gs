@@ -1,5 +1,5 @@
 use serde::Deserialize;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use crate::expand::*;
 
 #[derive(Deserialize, Debug)]
@@ -14,7 +14,6 @@ impl Config {
         if config.exists() {
             let text = std::fs::read_to_string(config).unwrap();
             let config: Config = toml::from_str(&text).unwrap();
-
             let repositries :Vec<_> = config.repositries.iter().map(expand_path).collect();
 
             Self {
