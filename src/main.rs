@@ -7,7 +7,7 @@ mod status;
 
 use itertools::Itertools;
 
-use std::path::PathBuf;
+use std::{intrinsics::unlikely, path::PathBuf};
 use structopt::StructOpt;
 
 #[derive(StructOpt, Debug)]
@@ -52,18 +52,21 @@ fn main() {
         .sorted_by(|a, b| Ord::cmp(&a.status, &b.status));
 
     let clean = all_status.clone().filter(|x| x.is_clean()).collect_vec();
-    println!("✅ Clean");
-    let clean_files = clean
-        .iter()
-        .map(|s| s.file.file_stem().unwrap().to_str().unwrap())
-        .collect_vec()
-        .join(",");
-    println!("\t{clean_files}");
-
-    let clean = all_status.filter(|x| !x.is_clean()).collect_vec();
-    println!("\n❌ Unclean");
-    for text in clean {
-        println!("\t{}", text)
+    if !clean.is_empty() {
+        println!("✅ Clean");
+        let clean_files = clean
+            .iter()
+            .map(|s| s.file.file_stem().unwrap().to_str().unwrap())
+            .collect_vec()
+            .join(",");
+        println!("\t{clean_files}");
     }
 
+    let unclean = all_status.filter(|x| !x.is_clean()).collect_vec();
+    if !unclean.is_empty() {
+        println!("\n❌ Unclean");
+        for text in unclean {
+            println!("\t{}", text)
+        }
+    }
 }
