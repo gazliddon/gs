@@ -52,21 +52,27 @@ fn main() {
         .sorted_by(|a, b| Ord::cmp(&a.status, &b.status));
 
     let clean = all_status.clone().filter(|x| x.is_clean()).collect_vec();
-    if !clean.is_empty() {
-        println!("✅ Clean");
-        let clean_files = clean
-            .iter()
-            .map(|s| s.file.file_stem().unwrap().to_str().unwrap())
-            .collect_vec()
-            .join(",");
-        println!("\t{clean_files}");
-    }
 
-    let unclean = all_status.filter(|x| !x.is_clean()).collect_vec();
-    if !unclean.is_empty() {
-        println!("\n❌ Unclean");
-        for text in unclean {
-            println!("\t{}", text)
+    if clean.len() == all_status.len() {
+        println!("✅ All Clean");
+    } else {
+        if !clean.is_empty() {
+            println!("✅ Clean");
+            let clean_files = clean
+                .iter()
+                .map(|s| s.file.file_stem().unwrap().to_str().unwrap())
+                .collect_vec()
+                .join(",");
+            println!("\t{clean_files}");
+        }
+
+        let unclean = all_status.filter(|x| !x.is_clean()).collect_vec();
+
+        if !unclean.is_empty() {
+            println!("\n❌ Unclean");
+            for text in unclean {
+                println!("\t{}", text)
+            }
         }
     }
 }
