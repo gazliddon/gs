@@ -7,7 +7,7 @@ mod status;
 
 use itertools::Itertools;
 
-use std::{intrinsics::unlikely, path::PathBuf};
+use std::path::PathBuf;
 use structopt::StructOpt;
 
 #[derive(StructOpt, Debug)]
