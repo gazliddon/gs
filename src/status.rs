@@ -4,7 +4,7 @@ use crate::dirs;
 
 use regex::Regex;
 
-#[derive(Debug, PartialEq, Copy, Clone, Eq, PartialOrd,Ord)]
+#[derive(Debug, PartialEq, Copy, Clone, Eq, PartialOrd,Ord, Hash)]
 pub enum StatusKind {
     ModifiedFiles,
     UntrackedFiles,
@@ -12,10 +12,10 @@ pub enum StatusKind {
     Clean,
 }
 
-#[derive(Clone, PartialEq, Eq, Debug)]
+#[derive(Clone, PartialEq, Eq, Debug, Hash)]
 pub struct Status {
-    file: PathBuf,
-    status: StatusKind,
+    pub file: PathBuf,
+    pub status: StatusKind,
 }
 
 impl Status {
@@ -25,15 +25,19 @@ impl Status {
             status,
         }
     }
+
+    pub fn is_clean(&self) -> bool {
+        self.status == StatusKind::Clean
+    }
 }
 impl std::fmt::Display for Status {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let _file = self.file.file_stem().map(|s| s.to_string_lossy()).unwrap();
         write!(
             f,
-            "{:20} {}",
+            "{:20} : {}",
+            _file,
             self.status.to_string(),
-            self.file.to_string_lossy()
         )
     }
 }
@@ -41,10 +45,10 @@ impl std::fmt::Display for Status {
 impl std::fmt::Display for StatusKind {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            StatusKind::ModifiedFiles => write!(f, "❌ Modified files"),
-            StatusKind::UntrackedFiles => write!(f, "❌ Untracked files"),
-            StatusKind::BranchIsAhead => write!(f, "❌ Branch is ahead"),
-            StatusKind::Clean => write!(f, "✅ Clean"),
+            StatusKind::ModifiedFiles => write!(f, "Modified files"),
+            StatusKind::UntrackedFiles => write!(f, "Untracked files"),
+            StatusKind::BranchIsAhead => write!(f, "Branch is ahead"),
+            StatusKind::Clean => write!(f, "Clean"),
         }
     }
 }

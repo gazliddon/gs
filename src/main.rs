@@ -21,11 +21,13 @@ struct Opt {
     #[structopt(short, long)]
     debug: bool,
 
+    #[structopt(short, long)]
+    noclean: bool,
+
     /// Files to process
     #[structopt(name = "FILE", parse(from_str = expand::expand_path))]
-    files: Vec<PathBuf>,
+    dirs: Vec<PathBuf>,
 }
-
 
 fn main() {
     use status::StatusGetter;
@@ -33,22 +35,35 @@ fn main() {
     let opt = Opt::from_args();
     let config = config::Config::new();
 
-    let mut files = opt.files;
+    let mut files = opt.dirs;
+
     files.extend(config.repositries);
 
     let files: Vec<_> = files.into_iter().unique().collect();
 
-    println!("{:?}", files);
+    let all_status = files
+        .into_iter()
+        .map(|p| {
+            let x = dirs::get_dirs(p);
+            StatusGetter::new(&x).to_statues()
+        })
+        .flatten()
+        .unique()
+        .sorted_by(|a, b| Ord::cmp(&a.status, &b.status));
 
-    for p in files {
-        let x = dirs::get_dirs(p);
+    let clean = all_status.clone().filter(|x| x.is_clean()).collect_vec();
+    println!("✅ Clean");
+    let clean_files = clean
+        .iter()
+        .map(|s| s.file.file_stem().unwrap().to_str().unwrap())
+        .collect_vec()
+        .join(",");
+    println!("\t{clean_files}");
 
-        let statuses = StatusGetter::new(&x).to_statues();
-
-        let txt_iter = statuses.into_iter().map(|s| s.to_string()).sorted();
-
-        for text in txt_iter {
-            println!("{}", text)
-        }
+    let clean = all_status.filter(|x| !x.is_clean()).collect_vec();
+    println!("\n❌ Unclean");
+    for text in clean {
+        println!("\t{}", text)
     }
+
 }
