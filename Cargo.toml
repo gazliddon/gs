@@ -11,3 +11,4 @@ shellexpand = "3.0"
 toml =  "0.8.8"
 serde = { version="1.0.188", features=[ "derive" ]}
 itertools="*"
+dirs = "5.0"
