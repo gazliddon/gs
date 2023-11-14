@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{ HashMap, HashSet };
 use std::path::{Path, PathBuf};
 use crate::dirs;
 
@@ -62,6 +62,7 @@ fn check_for_string(r: &str, text: &str) -> bool {
 #[derive(Debug, Default)]
 pub struct StatusGetter {
     cache: HashMap<PathBuf, Status>,
+    processed_dirs: HashSet<PathBuf>,
 }
 
 impl StatusGetter {
@@ -73,6 +74,9 @@ impl StatusGetter {
         }
 
         ret
+    }
+
+    pub fn add_dir<P: AsRef<Path>>(&self, _dir: P ) {
     }
 
     fn get_git_dir_status<P: AsRef<Path>>(&self, dir: P) -> Vec<Status> {
