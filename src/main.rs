@@ -6,30 +6,32 @@ mod expand;
 mod status;
 
 use itertools::Itertools;
-
 use std::path::PathBuf;
 use structopt::StructOpt;
 
-#[derive(StructOpt, Debug)]
-#[structopt(name = "basic")]
+use log::info;
 
+#[derive(StructOpt, Debug)]
+#[structopt(name = "gs")]
+#[structopt(version="0.1.0")]
+#[structopt(about="git status checker")]
+#[structopt(author="gazaxian")]
+#[structopt(rename_all = "kebab-case")]
 struct Opt {
-    // A flag, true if used in the command line. Note doc comment will
-    // be used for the help message of the flag. The name of the
-    // argument will be, by default, based on the name of the field.
     /// Activate debug mode
     #[structopt(short, long)]
     debug: bool,
-
-    #[structopt(short, long)]
-    noclean: bool,
 
     /// Files to process
     #[structopt(name = "FILE", parse(from_str = expand::expand_path))]
     dirs: Vec<PathBuf>,
 }
+use anyhow::Result;
 
-fn main() {
+fn main() -> Result<()> {
+    env_logger::init();
+
+    info!("Booting!");
     use status::StatusGetter;
 
     let opt = Opt::from_args();
@@ -44,7 +46,7 @@ fn main() {
     let all_status = files
         .into_iter()
         .map(|p| {
-            let x = dirs::get_dirs(p);
+            let x = dirs::get_dirs(p).expect("What");
             StatusGetter::new(&x).to_statues()
         })
         .flatten()
@@ -75,4 +77,5 @@ fn main() {
             }
         }
     }
+    Ok(())
 }

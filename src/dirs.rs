@@ -1,16 +1,13 @@
+use anyhow::{Context, Result};
 use std::fs::DirEntry;
 use std::path::{Path, PathBuf};
-use std::io;
 
-fn get_dir(de: DirEntry) -> Result<PathBuf, io::Error> {
-    if de.file_type().unwrap().is_dir() {
-        Ok(de.path())
-    } else {
-        Err(io::Error::new(io::ErrorKind::Other, "Oh no!"))
-    }
+fn get_dir(de: DirEntry) -> Option<PathBuf> {
+    let dir_entry = de.file_type().expect("Getting file type");
+    dir_entry.is_dir().then(|| de.path())
 }
 
-pub fn get_dirs<P: AsRef<Path>>(p: P) -> Vec<PathBuf> {
+pub fn get_dirs<P: AsRef<Path>>(p: P) -> Result<Vec<PathBuf>> {
     let path = p.as_ref().to_path_buf();
     let mut dirs = vec![];
 
@@ -18,15 +15,21 @@ pub fn get_dirs<P: AsRef<Path>>(p: P) -> Vec<PathBuf> {
         if is_git_dir(&path) {
             dirs.push(path.clone());
         } else {
-            for p in path.read_dir().expect("Can't read it!") {
-                if let Ok(dir) = p.and_then(get_dir) {
-                    dirs.extend(get_dirs(dir))
+            let paths = path
+                .read_dir()
+                .with_context(|| format!("Reading directory {path:?}"))?;
+
+            for path in paths {
+                if let Ok(path) = path {
+                    if let Some(path) = get_dir(path) {
+                        dirs.extend(get_dirs(path)?)
+                    }
                 }
             }
         }
     }
 
-    dirs
+    Ok(dirs)
 }
 
 pub fn is_git_dir<P: AsRef<Path>>(p: P) -> bool {
