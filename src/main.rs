@@ -8,7 +8,7 @@ mod status;
 use itertools::Itertools;
 use std::path::PathBuf;
 use structopt::StructOpt;
-
+use anyhow::Result;
 use log::info;
 
 #[derive(StructOpt, Debug)]
@@ -26,15 +26,21 @@ struct Opt {
     #[structopt(name = "FILE", parse(from_str = expand::expand_path))]
     dirs: Vec<PathBuf>,
 }
-use anyhow::Result;
+
 
 fn main() -> Result<()> {
-    env_logger::init();
-
-    info!("Booting!");
     use status::StatusGetter;
 
     let opt = Opt::from_args();
+
+    if opt.debug {
+        simple_logger::init_with_level(log::Level::Trace).unwrap();
+    } else {
+        simple_logger::init_with_level(log::Level::Error).unwrap();
+    }
+
+    info!("Starting with logging");
+
     let config = config::Config::new();
 
     let mut files = opt.dirs;

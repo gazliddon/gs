@@ -3,8 +3,9 @@ use std::fs::DirEntry;
 use std::path::{Path, PathBuf};
 
 fn get_dir(de: DirEntry) -> Option<PathBuf> {
-    let dir_entry = de.file_type().expect("Getting file type");
-    dir_entry.is_dir().then(|| de.path())
+    de.file_type()
+        .ok()
+        .and_then(|v| v.is_dir().then(|| de.path()))
 }
 
 pub fn get_dirs<P: AsRef<Path>>(p: P) -> Result<Vec<PathBuf>> {
@@ -20,10 +21,8 @@ pub fn get_dirs<P: AsRef<Path>>(p: P) -> Result<Vec<PathBuf>> {
                 .with_context(|| format!("Reading directory {path:?}"))?;
 
             for path in paths {
-                if let Ok(path) = path {
-                    if let Some(path) = get_dir(path) {
-                        dirs.extend(get_dirs(path)?)
-                    }
+                if let Some(path) = path.ok().and_then(get_dir) {
+                    dirs.extend(get_dirs(path)?)
                 }
             }
         }
